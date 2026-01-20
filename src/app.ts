@@ -11,13 +11,10 @@ import cookieParser from "cookie-parser";
 import { rateLimiter } from "./middleware/rateLimit.middleware";
 const app = express();
 
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-  }),
-);
+cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true,
+});
 
 app.use(bodyParser.json());
 app.use(cookieParser());
