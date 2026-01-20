@@ -39,4 +39,5 @@ const ViewSchema = new mongoose_1.Schema({
     ip: { type: String },
     userAgent: { type: String },
 }, { timestamps: true });
-exports.default = mongoose_1.default.model("View", ViewSchema);
+const View = (mongoose_1.default.models.View) || mongoose_1.default.model("View", ViewSchema);
+exports.default = View;

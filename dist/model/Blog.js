@@ -53,4 +53,5 @@ const BlogSchema = new mongoose_1.Schema({
     views: { type: Number, default: 0 },
     readTime: { type: Number },
 }, { timestamps: true });
-exports.default = mongoose_1.default.model("Blog", BlogSchema);
+const Blog = (mongoose_1.default.models.Blog) || mongoose_1.default.model("Blog", BlogSchema);
+exports.default = Blog;

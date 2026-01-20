@@ -37,6 +37,10 @@ const mongoose_1 = __importStar(require("mongoose"));
 const CategorySchema = new mongoose_1.Schema({
     name: { type: String, required: true, unique: true },
     slug: { type: String, required: true, unique: true },
-    description: String,
+    description: {
+        type: String,
+    },
 }, { timestamps: true });
-exports.default = mongoose_1.default.model("Category", CategorySchema);
+const Category = (mongoose_1.default.models.Category) ||
+    mongoose_1.default.model("Category", CategorySchema);
+exports.default = Category;

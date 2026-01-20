@@ -4,7 +4,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
-const mongo_uri = process.env.MONGODB_URI;
 mongoose_1.default.connection.on("connected", () => {
     console.log("MongoDB connection established");
 });
@@ -15,6 +14,7 @@ mongoose_1.default.connection.on("error", (err) => {
     console.error("MongoDB error:", err);
 });
 const connectDB = async (retries = 5, delay = 3000) => {
+    const mongo_uri = process.env.MONGODB_URI;
     try {
         if (!mongo_uri) {
             console.error("Mongo url is missing");

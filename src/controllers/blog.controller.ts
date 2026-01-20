@@ -42,16 +42,16 @@ export const getAllBlogs = asyncHandler(async (req: Request, res: Response) => {
   const cacheKey = "blogs:all";
     console.log("Test",search,limit)
 
-  const cachedBlogs = await redisClient.get(cacheKey);
-  if (cachedBlogs) {
-    return res.status(200).json({
-      success: true,
-      message: "Fetched Blog Successfully!",
-      source: "redis",
-      count: JSON.parse(cachedBlogs).length,
-      data: JSON.parse(cachedBlogs),
-    });
-  }
+  // const cachedBlogs = await redisClient.get(cacheKey);
+  // if (cachedBlogs) {
+  //   return res.status(200).json({
+  //     success: true,
+  //     message: "Fetched Blog Successfully!",
+  //     source: "redis",
+  //     count: JSON.parse(cachedBlogs).length,
+  //     data: JSON.parse(cachedBlogs),
+  //   });
+  // }
   const filterData = filterQuery(filterValue);
 
   Object.keys(filterData).forEach((key) => {
@@ -72,11 +72,11 @@ export const getAllBlogs = asyncHandler(async (req: Request, res: Response) => {
 
   // .limit(limit)
   // .skip(skip);
-  if (blogs.length === 0) {
-    const error: any = new Error("No blogs found");
-    error.statusCode = 404;
-    throw error;
-  }
+  // if (blogs.length === 0) {
+  //   const error: any = new Error("No blogs found");
+  //   error.statusCode = 404;
+  //   throw error;
+  // }
   await redisClient.set(cacheKey, JSON.stringify(blogs), { EX: 5 * 60 });
   res.status(200).json({
     success: true,
@@ -94,16 +94,16 @@ export const getBlogBySlug = asyncHandler(
       error.statusCode = 404;
       throw error;
     }
-    const cacheKey = `blog:${slug}`;
-    const cachedBlog = await redisClient.get(cacheKey);
-    if (cachedBlog) {
-      return res.status(200).json({
-        success: true,
-        message: "Fetched Blog Successfully!",
-        source: "redis",
-        data: JSON.parse(cachedBlog),
-      });
-    }
+    // const cacheKey = `blog:${slug}`;
+    // const cachedBlog = await redisClient.get(cacheKey);
+    // if (cachedBlog) {
+    //   return res.status(200).json({
+    //     success: true,
+    //     message: "Fetched Blog Successfully!",
+    //     source: "redis",
+    //     data: JSON.parse(cachedBlog),
+    //   });
+    // }
     const blog = await Blog.findOne({ slug }).populate("category");
 
     if (!blog) {
@@ -119,7 +119,7 @@ export const getBlogBySlug = asyncHandler(
       ip: req.ip,
       userAgent: req.headers["user-agent"],
     });
-    await redisClient.set(cacheKey, JSON.stringify(blog), { EX: 5*60 });
+    // await redisClient.set(cacheKey, JSON.stringify(blog), { EX: 5*60 });
     res.status(200).json({
       success: true,
       message: "Fetched Blog Successfully!",
@@ -149,13 +149,13 @@ export const updateBlog = asyncHandler(async (req: Request, res: Response) => {
     error.statusCode = 404;
     throw error;
   }
-  await redisClient.del("blogs:all");
-  await redisClient.del(`blog:${blog.slug}`);
-  res.status(200).json({
-    success: true,
-    message: "Blog Updated Successfully!",
-    data: blog,
-  });
+  // await redisClient.del("blogs:all");
+  // await redisClient.del(`blog:${blog.slug}`);
+  // res.status(200).json({
+  //   success: true,
+  //   message: "Blog Updated Successfully!",
+  //   data: blog,
+  // });
 });
 
 export const deleteBlog = asyncHandler(async (req: Request, res: Response) => {

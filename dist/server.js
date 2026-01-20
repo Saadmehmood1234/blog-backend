@@ -3,15 +3,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const app_1 = __importDefault(require("./app"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const db_1 = __importDefault(require("./config/db"));
+const redis_1 = require("./config/redis");
 dotenv_1.default.config();
+const app_1 = __importDefault(require("./app"));
 const server = async () => {
-    const PORT = process.env.PORT;
+    await (0, redis_1.connectRedis)();
     await (0, db_1.default)();
-    app_1.default.listen(PORT || 5000, () => {
-        console.log(`App is running at port ${PORT}`);
+    const PORT = Number(process.env.PORT) || 5000;
+    app_1.default.listen(PORT, "0.0.0.0", () => {
+        console.log(`App is running on port ${PORT}`);
     });
 };
 server();
