@@ -6,12 +6,50 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteBlog = exports.updateBlog = exports.getBlogBySlug = exports.getAllBlogs = exports.createBlog = void 0;
 const Blog_1 = __importDefault(require("../model/Blog"));
 const View_1 = __importDefault(require("../model/View"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const asyncHandler_1 = __importDefault(require("../utils/asyncHandler"));
 const redis_1 = __importDefault(require("../config/redis"));
 const FilterQuery_1 = require("../utils/FilterQuery");
+const Upload_1 = require("../utils/cloudanary/Upload");
+// cloudinary.config({
+//   cloud_name: 'my_cloud_name',
+//   api_key: 'my_key',
+//   api_secret: 'my_secret'
+// });
 exports.createBlog = (0, asyncHandler_1.default)(async (req, res) => {
-    const blog = await Blog_1.default.create(req.body);
-    await redis_1.default.del("blogs:all");
+    let imageUrl = "";
+    if (req.file) {
+        const uploadResult = await (0, Upload_1.uploadImageToCloudinary)(req.file);
+        imageUrl = uploadResult.secure_url;
+    }
+    const tags = req.body.tags
+        ? req.body.tags.split(",").map((t) => t.trim())
+        : [];
+    const readTime = Number(req.body.readTime) || 1;
+    const categoryId = req.body.category;
+    if (!req.body.title ||
+        !req.body.content ||
+        !req.body.excerpt ||
+        !categoryId ||
+        !req.body.seoTitle ||
+        !req.body.seoDescription ||
+        !req.body.slug) {
+        return res.status(400).json({ message: "Missing required fields" });
+    }
+    const blog = await Blog_1.default.create({
+        title: req.body.title,
+        content: req.body.content,
+        excerpt: req.body.excerpt,
+        category: categoryId,
+        seoTitle: req.body.seoTitle,
+        seoDescription: req.body.seoDescription,
+        slug: req.body.slug,
+        tags,
+        readTime,
+        featuredImage: imageUrl,
+    });
+    console.log(blog);
+    // await redisClient.del("blogs:all");
     res.status(201).json({
         success: true,
         message: "Blog created Successfully!",
@@ -51,7 +89,7 @@ exports.getAllBlogs = (0, asyncHandler_1.default)(async (req, res) => {
             delete filterData[key];
         }
     });
-    const blogs = await Blog_1.default.find(filterData)
+    const blogs = await Blog_1.default.find({ ...filterData, isDeleted: false })
         .populate("category")
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -63,6 +101,7 @@ exports.getAllBlogs = (0, asyncHandler_1.default)(async (req, res) => {
     //   error.statusCode = 404;
     //   throw error;
     // }
+    console.log(blogs);
     await redis_1.default.set(cacheKey, JSON.stringify(blogs), { EX: 5 * 60 });
     res.status(200).json({
         success: true,
@@ -130,14 +169,24 @@ exports.updateBlog = (0, asyncHandler_1.default)(async (req, res) => {
     // });
 });
 exports.deleteBlog = (0, asyncHandler_1.default)(async (req, res) => {
-    const blog = await Blog_1.default.findByIdAndDelete(req.params.id);
-    if (!blog) {
-        const error = new Error("Blog not found");
-        error.statusCode = 404;
-        throw error;
+    const id = String(req.params.id);
+    if (!mongoose_1.default.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid blog id",
+        });
     }
-    await redis_1.default.del("blogs:all");
-    await redis_1.default.del(`blog:${blog.slug}`);
+    const blog = await Blog_1.default.findOneAndUpdate({ _id: id, isDeleted: { $ne: true } }, { $set: { isDeleted: true } }, { new: true });
+    if (!blog) {
+        return res.status(404).json({
+            success: false,
+            message: "Blog not found or already deleted",
+        });
+    }
+    // await Promise.all([
+    //   redisClient.del("blogs:all"),
+    //   redisClient.del(`blog:${blog.slug}`),
+    // ]);
     res.status(200).json({
         success: true,
         message: "Blog deleted successfully",

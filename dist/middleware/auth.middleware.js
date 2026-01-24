@@ -19,6 +19,7 @@ exports.protect = (0, asyncHandler_1.default)(async (req, _res, next) => {
         req.headers.authorization.startsWith("Bearer")) {
         token = req.headers.authorization.split(" ")[1];
     }
+    console.log(token, "Token");
     if (!token) {
         const err = new Error("Not authorized, token missing");
         err.statusCode = 401;

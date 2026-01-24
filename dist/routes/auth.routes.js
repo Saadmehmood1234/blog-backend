@@ -12,4 +12,5 @@ const router = express_1.default.Router();
 router.post("/signup", (0, validation_middleware_1.validationMiddleware)(auth_schema_1.signupSchema), auth_controller_1.signup);
 router.post("/signin", (0, validation_middleware_1.validationMiddleware)(auth_schema_1.signinSchema), auth_controller_1.signin);
 router.post("/signout", auth_middleware_1.protect, auth_controller_1.signout);
+router.get("/verify", auth_controller_1.verifyUser);
 exports.default = router;
