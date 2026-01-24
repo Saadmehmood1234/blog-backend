@@ -5,16 +5,60 @@ import asyncHandler from "../utils/asyncHandler";
 import redisClient from "../config/redis";
 import { filterQuery } from "../utils/FilterQuery";
 import { QueryType } from "../config/Types";
+import cloudinary from "cloudinary";
+import { Readable } from "node:stream";
+import { uploadImageToCloudinary } from "../utils/cloudanary/Upload";
+// cloudinary.config({
+//   cloud_name: 'my_cloud_name',
+//   api_key: 'my_key',
+//   api_secret: 'my_secret'
+// });
+
 export const createBlog = asyncHandler(async (req: Request, res: Response) => {
-  const blog = await Blog.create(req.body);
-  await redisClient.del("blogs:all");
+  let imageUrl = "";
+
+  if (req.file) {
+    const uploadResult = await uploadImageToCloudinary(req.file);
+    imageUrl = uploadResult.secure_url;
+  }
+
+  // Convert tags string to array
+  const tags: string[] = req.body.tags
+    ? req.body.tags.split(",").map((t: string) => t.trim())
+    : [];
+
+  // Convert readTime to number
+  const readTime = Number(req.body.readTime) || 1; // default 1
+
+  // Convert category to ObjectId
+  const categoryId = req.body.category;
+
+  // Check required fields
+  if (!req.body.title || !req.body.content || !req.body.excerpt || !categoryId || !req.body.seoTitle || !req.body.seoDescription || !req.body.slug) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+
+  const blog = await Blog.create({
+    title: req.body.title,
+    content: req.body.content,
+    excerpt: req.body.excerpt,
+    category: categoryId,
+    seoTitle: req.body.seoTitle,
+    seoDescription: req.body.seoDescription,
+    slug: req.body.slug,
+    tags,
+    readTime,
+    featuredImage: imageUrl,
+  });
+console.log(blog)
+  // await redisClient.del("blogs:all");
+
   res.status(201).json({
     success: true,
     message: "Blog created Successfully!",
     data: blog,
   });
 });
-
 
 export const getAllBlogs = asyncHandler(async (req: Request, res: Response) => {
   const {
@@ -40,7 +84,7 @@ export const getAllBlogs = asyncHandler(async (req: Request, res: Response) => {
   const limit = 10;
   const skip = (Number(page) - 1) * limit;
   const cacheKey = "blogs:all";
-    console.log("Test",search,limit)
+  console.log("Test", search, limit);
 
   // const cachedBlogs = await redisClient.get(cacheKey);
   // if (cachedBlogs) {
