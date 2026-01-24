@@ -48,7 +48,7 @@ interface JwtPayload {
 export const protect = asyncHandler(
   async (req: Request, _res: Response, next: NextFunction) => {
     let token: string | undefined;
-
+   
     if (req.cookies?.jwt) {
       token = req.cookies.jwt;
     } else if (
@@ -57,7 +57,7 @@ export const protect = asyncHandler(
     ) {
       token = req.headers.authorization.split(" ")[1];
     }
-
+console.log(token,"Token")
     if (!token) {
       const err: any = new Error("Not authorized, token missing");
       err.statusCode = 401;

@@ -36,10 +36,10 @@ export const createSubscriber = asyncHandler(
     if (existingSubscriber) {
       existingSubscriber.verificationToken = hashedToken;
       existingSubscriber.verificationTokenExpiresAt =
-        verificationTokenExpiresAt;
+      verificationTokenExpiresAt;
 
       await existingSubscriber.save();
-      const verifyUrl = `${process.env.FRONTEND_URL}/verify?token=${rawToken}`;
+      const verifyUrl = `${process.env.FRONTEND_URL}/verify/subscribe?token=${rawToken}`;
       const html = renderTemplate("verify-email.html", {
         VERIFY_URL: verifyUrl,
       });
@@ -62,7 +62,7 @@ export const createSubscriber = asyncHandler(
       verificationTokenExpiresAt,
     });
 
-    const verifyUrl = `${process.env.FRONTEND_URL}/verify?token=${rawToken}`;
+    const verifyUrl = `${process.env.FRONTEND_URL}/verify/subscribe?token=${rawToken}`;
     const html = renderTemplate("verify-email.html", {
       VERIFY_URL: verifyUrl,
     });

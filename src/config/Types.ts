@@ -14,6 +14,9 @@ export interface IView extends Document {
 export interface IUser extends Document {
   name: string;
   email: string;
+  isVerified?:boolean;
+  verificationToken?:boolean;
+  verificationTokenExpiresAt?:Date
   password: string;
   role: "admin";
 }
@@ -31,6 +34,7 @@ export interface IBlog extends Document {
   excerpt: string;
   category: mongoose.Types.ObjectId;
   tags: string[];
+  isDeleted:Boolean;
   featuredImage: string;
   seoTitle: string;
   seoDescription: string;
@@ -43,6 +47,7 @@ export interface IBlog extends Document {
 export interface QueryType {
   title?: string;
   category?: string;
+  isDeleted?:boolean
   isFeatured?: string;
   search?: string;
   tags?: [];

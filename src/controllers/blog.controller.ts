@@ -1,12 +1,12 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import Blog from "../model/Blog";
 import View from "../model/View";
+import mongoose from "mongoose";
+
 import asyncHandler from "../utils/asyncHandler";
 import redisClient from "../config/redis";
 import { filterQuery } from "../utils/FilterQuery";
 import { QueryType } from "../config/Types";
-import cloudinary from "cloudinary";
-import { Readable } from "node:stream";
 import { uploadImageToCloudinary } from "../utils/cloudanary/Upload";
 // cloudinary.config({
 //   cloud_name: 'my_cloud_name',
@@ -22,19 +22,23 @@ export const createBlog = asyncHandler(async (req: Request, res: Response) => {
     imageUrl = uploadResult.secure_url;
   }
 
-  // Convert tags string to array
   const tags: string[] = req.body.tags
     ? req.body.tags.split(",").map((t: string) => t.trim())
     : [];
 
-  // Convert readTime to number
-  const readTime = Number(req.body.readTime) || 1; // default 1
+  const readTime = Number(req.body.readTime) || 1;
 
-  // Convert category to ObjectId
   const categoryId = req.body.category;
 
-  // Check required fields
-  if (!req.body.title || !req.body.content || !req.body.excerpt || !categoryId || !req.body.seoTitle || !req.body.seoDescription || !req.body.slug) {
+  if (
+    !req.body.title ||
+    !req.body.content ||
+    !req.body.excerpt ||
+    !categoryId ||
+    !req.body.seoTitle ||
+    !req.body.seoDescription ||
+    !req.body.slug
+  ) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
@@ -50,7 +54,7 @@ export const createBlog = asyncHandler(async (req: Request, res: Response) => {
     readTime,
     featuredImage: imageUrl,
   });
-console.log(blog)
+  console.log(blog);
   // await redisClient.del("blogs:all");
 
   res.status(201).json({
@@ -108,7 +112,7 @@ export const getAllBlogs = asyncHandler(async (req: Request, res: Response) => {
     }
   });
 
-  const blogs = await Blog.find(filterData)
+  const blogs = await Blog.find({...filterData,isDeleted:false})
     .populate("category")
     .sort({ createdAt: -1 })
     .skip(skip)
@@ -121,6 +125,7 @@ export const getAllBlogs = asyncHandler(async (req: Request, res: Response) => {
   //   error.statusCode = 404;
   //   throw error;
   // }
+  console.log(blogs)
   await redisClient.set(cacheKey, JSON.stringify(blogs), { EX: 5 * 60 });
   res.status(200).json({
     success: true,
@@ -203,14 +208,33 @@ export const updateBlog = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const deleteBlog = asyncHandler(async (req: Request, res: Response) => {
-  const blog = await Blog.findByIdAndDelete(req.params.id);
-  if (!blog) {
-    const error: any = new Error("Blog not found");
-    error.statusCode = 404;
-    throw error;
+  const id = String(req.params.id);
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid blog id",
+    });
   }
-  await redisClient.del("blogs:all");
-  await redisClient.del(`blog:${blog.slug}`);
+
+  const blog = await Blog.findOneAndUpdate(
+    { _id: id, isDeleted: { $ne: true } },
+    { $set: { isDeleted: true } },
+    { new: true },
+  );
+
+  if (!blog) {
+    return res.status(404).json({
+      success: false,
+      message: "Blog not found or already deleted",
+    });
+  }
+
+  // await Promise.all([
+  //   redisClient.del("blogs:all"),
+  //   redisClient.del(`blog:${blog.slug}`),
+  // ]);
+
   res.status(200).json({
     success: true,
     message: "Blog deleted successfully",

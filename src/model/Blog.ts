@@ -16,7 +16,7 @@ const BlogSchema = new Schema<IBlog>(
 
     seoTitle: { type: String, required: true },
     seoDescription: { type: String, required: true },
-
+    isDeleted: { type: Boolean, default: false },
     isFeatured: { type: Boolean, default: false },
     status: { type: String, enum: ["draft", "published"], default: "draft" },
 

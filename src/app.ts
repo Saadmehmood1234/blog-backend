@@ -21,7 +21,7 @@ app.use(
 );
 
 app.use(compression());
-// app.use(bodyParser.json());
+app.use(bodyParser.json());
 app.use(rateLimiter);
 app.use(cookieParser());
 app.use("/api/v1/auth", authRoutes);
