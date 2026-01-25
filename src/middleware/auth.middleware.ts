@@ -48,7 +48,7 @@ interface JwtPayload {
 export const protect = asyncHandler(
   async (req: Request, _res: Response, next: NextFunction) => {
     let token: string | undefined;
-   
+
     if (req.cookies?.jwt) {
       token = req.cookies.jwt;
     } else if (
@@ -57,6 +57,8 @@ export const protect = asyncHandler(
     ) {
       token = req.headers.authorization.split(" ")[1];
     }
+    console.log("Befor Token", token);
+
     if (!token) {
       const err: any = new Error("Not authorized, token missing");
       err.statusCode = 401;
@@ -65,7 +67,7 @@ export const protect = asyncHandler(
 
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET as string
+      process.env.JWT_SECRET as string,
     ) as JwtPayload;
     // const redisToken = await redisClient.get(`auth:${decoded.userId}`);
     // if (!redisToken) {
@@ -73,14 +75,16 @@ export const protect = asyncHandler(
     //   err.statusCode = 401;
     //   throw err;
     // }
+    console.log("Befor user", decoded, token);
     const user = await User.findById(decoded.userId).select("-password");
     if (!user) {
       const err: any = new Error("User not found");
       err.statusCode = 401;
       throw err;
     }
-  
+
     (req as any).user = user;
+    console.log("After user", user);
     next();
-  }
+  },
 );
