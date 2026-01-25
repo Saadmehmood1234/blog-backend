@@ -13,7 +13,7 @@ const generateToken = async (userId: string, role: string, res: Response) => {
     httpOnly: true,
     sameSite: "none",
     maxAge: 10 * 24 * 60 * 60 * 1000,
-    secure: process.env.NODE_ENV === "production",
+    // secure: process.env.NODE_ENV === "production",
     path: "/",
   });
   return token;
