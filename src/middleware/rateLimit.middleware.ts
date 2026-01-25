@@ -18,7 +18,7 @@ import redisClient, { connectRedis } from "../config/redis";
   }
 })();
 export const rateLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000,
+  windowMs: 2 * 60 * 1000,
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,

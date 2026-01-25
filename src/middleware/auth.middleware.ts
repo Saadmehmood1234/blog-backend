@@ -57,7 +57,6 @@ export const protect = asyncHandler(
     ) {
       token = req.headers.authorization.split(" ")[1];
     }
-console.log(token,"Token")
     if (!token) {
       const err: any = new Error("Not authorized, token missing");
       err.statusCode = 401;
@@ -68,7 +67,6 @@ console.log(token,"Token")
       token,
       process.env.JWT_SECRET as string
     ) as JwtPayload;
-
     // const redisToken = await redisClient.get(`auth:${decoded.userId}`);
     // if (!redisToken) {
     //   const err: any = new Error("Session expired");
@@ -81,9 +79,8 @@ console.log(token,"Token")
       err.statusCode = 401;
       throw err;
     }
-
+  
     (req as any).user = user;
-
     next();
   }
 );

@@ -6,7 +6,7 @@ import Blog from "../model/Blog";
 export const createCategory = asyncHandler(
   async (req: Request, res: Response) => {
     const { slug, name, description } = req.body;
-
+    console.error("Data",slug,name,description,"Test")
     if (!slug || !name || !description) {
       const err: any = new Error("All fields are required");
       err.statusCode = 400;

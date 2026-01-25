@@ -9,9 +9,10 @@ import {
   getBlogsByCategorySlug,
 } from "../controllers/category.controller";
 import { protect } from "../middleware/auth.middleware";
+import multer from "multer";
 const router = express.Router();
-
-router.post("/", protect, createCategory);
+const upload = multer(); 
+router.post("/", protect,upload.none(), createCategory);
 router.get("/", getAllCategory);
 router.get("/:slug", getBlogsByCategorySlug);
 router.get("/:id", getCategoryById);
