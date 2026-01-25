@@ -54,7 +54,6 @@ export const createBlog = asyncHandler(async (req: Request, res: Response) => {
     readTime,
     featuredImage: imageUrl,
   });
-  console.log(blog);
   // await redisClient.del("blogs:all");
 
   res.status(201).json({
@@ -88,7 +87,6 @@ export const getAllBlogs = asyncHandler(async (req: Request, res: Response) => {
   const limit = 10;
   const skip = (Number(page) - 1) * limit;
   const cacheKey = "blogs:all";
-  console.log("Test", search, limit);
 
   // const cachedBlogs = await redisClient.get(cacheKey);
   // if (cachedBlogs) {
@@ -125,7 +123,6 @@ export const getAllBlogs = asyncHandler(async (req: Request, res: Response) => {
   //   error.statusCode = 404;
   //   throw error;
   // }
-  console.log(blogs)
   await redisClient.set(cacheKey, JSON.stringify(blogs), { EX: 5 * 60 });
   res.status(200).json({
     success: true,

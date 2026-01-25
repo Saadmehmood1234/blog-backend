@@ -15,6 +15,7 @@ router.post("/signup", validationMiddleware(signupSchema), signup);
 router.post("/signin", validationMiddleware(signinSchema), signin);
 router.post("/signout", protect, signout);
 router.get("/me", protect, (req, res) => {
+  console.log("are we calling it",(req as any).user);
   res.json({
     user: (req as any).user,
   });

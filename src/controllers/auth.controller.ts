@@ -109,7 +109,6 @@ export const signin = asyncHandler(async (req: Request, res: Response) => {
     });
   }
   await generateToken(user._id.toString(), user.role, res);
-  console.log("token",user)
   res.status(200).json({
     success: true,
     message: "Login Successfully!",

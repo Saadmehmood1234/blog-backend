@@ -57,8 +57,6 @@ export const protect = asyncHandler(
     ) {
       token = req.headers.authorization.split(" ")[1];
     }
-    console.log("Befor Token", token);
-
     if (!token) {
       const err: any = new Error("Not authorized, token missing");
       err.statusCode = 401;

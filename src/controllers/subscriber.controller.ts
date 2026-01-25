@@ -49,7 +49,6 @@ export const createSubscriber = asyncHandler(
         subject: "Verify your email subscription",
         html,
       });
-      console;
       return res.status(200).json({
         success: true,
         message: "Verification email resent. Please check your inbox.",
@@ -107,7 +106,6 @@ export const verifySubscriber = asyncHandler(
       verificationToken: hashedToken,
       verificationTokenExpiresAt: { $gt: new Date() },
     });
-    console.log(token, subscriber);
     if (!subscriber) {
       return res
         .status(400)
