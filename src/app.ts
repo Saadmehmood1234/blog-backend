@@ -12,7 +12,7 @@ import compression from "compression";
 
 import { rateLimiter } from "./middleware/rateLimit.middleware";
 const app = express();
-
+app.set("trust proxy", 1);
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,
