@@ -113,12 +113,6 @@ export const signin = asyncHandler(async (req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     message: "Login Successfully!",
-    data: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    },
   });
 });
 
@@ -172,11 +166,6 @@ export const verifyUser = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json({
     success: true,
     message: "User created Successfully",
-    data: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    },
   });
 });
+
