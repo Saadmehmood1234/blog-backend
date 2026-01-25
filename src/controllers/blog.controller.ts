@@ -54,13 +54,16 @@ export const createBlog = asyncHandler(async (req: Request, res: Response) => {
     readTime,
     featuredImage: imageUrl,
   });
-  // await redisClient.del("blogs:all");
-
-  res.status(201).json({
-    success: true,
-    message: "Blog created Successfully!",
-    data: blog,
-  });
+  const keys = await redisClient.keys("blogs:all*");
+  if (keys.length > 0) {
+    await redisClient.del(keys);
+  }
+  (redisClient.del(`blog:${blog.slug}`),
+    res.status(201).json({
+      success: true,
+      message: "Blog created Successfully!",
+      data: blog,
+    }));
 });
 
 export const getAllBlogs = asyncHandler(async (req: Request, res: Response) => {
@@ -86,20 +89,20 @@ export const getAllBlogs = asyncHandler(async (req: Request, res: Response) => {
   };
   const limit = 10;
   const skip = (Number(page) - 1) * limit;
-  const cacheKey = "blogs:all";
 
-  // const cachedBlogs = await redisClient.get(cacheKey);
-  // if (cachedBlogs) {
-  //   return res.status(200).json({
-  //     success: true,
-  //     message: "Fetched Blog Successfully!",
-  //     source: "redis",
-  //     count: JSON.parse(cachedBlogs).length,
-  //     data: JSON.parse(cachedBlogs),
-  //   });
-  // }
   const filterData = filterQuery(filterValue);
+  const cacheKey = `blogs:all:${JSON.stringify(filterData)}:page:${page}`;
 
+  const cachedBlogs = await redisClient.get(cacheKey);
+  if (cachedBlogs) {
+    return res.status(200).json({
+      success: true,
+      message: "Fetched Blog Successfully!",
+      source: "redis",
+      count: JSON.parse(cachedBlogs).length,
+      data: JSON.parse(cachedBlogs),
+    });
+  }
   Object.keys(filterData).forEach((key) => {
     if (
       filterData[key] === "" ||
@@ -110,7 +113,7 @@ export const getAllBlogs = asyncHandler(async (req: Request, res: Response) => {
     }
   });
 
-  const blogs = await Blog.find({...filterData,isDeleted:false})
+  const blogs = await Blog.find({ ...filterData, isDeleted: false })
     .populate("category")
     .sort({ createdAt: -1 })
     .skip(skip)
@@ -123,7 +126,10 @@ export const getAllBlogs = asyncHandler(async (req: Request, res: Response) => {
   //   error.statusCode = 404;
   //   throw error;
   // }
-  await redisClient.set(cacheKey, JSON.stringify(blogs), { EX: 5 * 60 });
+  await redisClient.set(cacheKey, JSON.stringify(blogs), {
+    EX: 5 * 60 * 60 * 24,
+  });
+
   res.status(200).json({
     success: true,
     message: "Fetched Blog Successfully!",
@@ -134,29 +140,31 @@ export const getAllBlogs = asyncHandler(async (req: Request, res: Response) => {
 
 export const getBlogBySlug = asyncHandler(
   async (req: Request, res: Response) => {
-    const slug = req?.params?.slug;
+    const slug = req.params.slug;
     if (!slug) {
       const error: any = new Error("Slug is missing");
       error.statusCode = 404;
       throw error;
     }
-    // const cacheKey = `blog:${slug}`;
-    // const cachedBlog = await redisClient.get(cacheKey);
-    // if (cachedBlog) {
-    //   return res.status(200).json({
-    //     success: true,
-    //     message: "Fetched Blog Successfully!",
-    //     source: "redis",
-    //     data: JSON.parse(cachedBlog),
-    //   });
-    // }
-    const blog = await Blog.findOne({ slug }).populate("category");
 
+    const cacheKey = `blog:${slug}`;
+    const cachedBlog = await redisClient.get(cacheKey);
+
+    if (cachedBlog) {
+      return res.status(200).json({
+        success: true,
+        message: "Fetched Blog Successfully!",
+        source: "redis",
+        data: JSON.parse(cachedBlog),
+      });
+    }
+    const blog = await Blog.findOne({ slug }).populate("category");
     if (!blog) {
       const error: any = new Error("No blogs found");
       error.statusCode = 404;
       throw error;
     }
+
     blog.views += 1;
     await blog.save();
 
@@ -165,7 +173,12 @@ export const getBlogBySlug = asyncHandler(
       ip: req.ip,
       userAgent: req.headers["user-agent"],
     });
-    // await redisClient.set(cacheKey, JSON.stringify(blog), { EX: 5*60 });
+
+    const blogForCache = { ...blog.toObject(), views: blog.views };
+    await redisClient.set(cacheKey, JSON.stringify(blogForCache), {
+      EX: 5 * 60,
+    });
+
     res.status(200).json({
       success: true,
       message: "Fetched Blog Successfully!",
@@ -180,28 +193,28 @@ export const updateBlog = asyncHandler(async (req: Request, res: Response) => {
       ([_, value]) => value !== null && value !== "",
     ),
   );
+
   const blog = await Blog.findByIdAndUpdate(
     req.params.id,
-    {
-      $set: updateData,
-    },
-    {
-      new: true,
-      runValidators: true,
-    },
+    { $set: updateData },
+    { new: true, runValidators: true },
   );
   if (!blog) {
     const error: any = new Error("Blog not found");
     error.statusCode = 404;
     throw error;
   }
-  // await redisClient.del("blogs:all");
-  // await redisClient.del(`blog:${blog.slug}`);
-  // res.status(200).json({
-  //   success: true,
-  //   message: "Blog Updated Successfully!",
-  //   data: blog,
-  // });
+
+  await Promise.all([
+    redisClient.del("blogs:all"),
+    redisClient.del(`blog:${blog.slug}`),
+  ]);
+
+  res.status(200).json({
+    success: true,
+    message: "Blog Updated Successfully!",
+    data: blog,
+  });
 });
 
 export const deleteBlog = asyncHandler(async (req: Request, res: Response) => {
@@ -214,8 +227,8 @@ export const deleteBlog = asyncHandler(async (req: Request, res: Response) => {
     });
   }
 
-  const blog = await Blog.findOneAndUpdate(
-    { _id: id, isDeleted: { $ne: true } },
+  const blog = await Blog.findByIdAndUpdate(
+    id,
     { $set: { isDeleted: true } },
     { new: true },
   );
@@ -227,10 +240,10 @@ export const deleteBlog = asyncHandler(async (req: Request, res: Response) => {
     });
   }
 
-  // await Promise.all([
-  //   redisClient.del("blogs:all"),
-  //   redisClient.del(`blog:${blog.slug}`),
-  // ]);
+  await Promise.all([
+    redisClient.del("blogs:all"),
+    redisClient.del(`blog:${blog.slug}`),
+  ]);
 
   res.status(200).json({
     success: true,

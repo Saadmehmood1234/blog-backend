@@ -5,6 +5,7 @@ import { generateVerificationToken } from "../utils/generateVerificationToken";
 import { renderTemplate } from "../utils/renderTemplate";
 import { sendEmail } from "../utils/services/emailService";
 import crypto from "crypto";
+import redisClient from "../config/redis";
 
 export const createSubscriber = asyncHandler(
   async (req: Request, res: Response) => {
@@ -36,9 +37,10 @@ export const createSubscriber = asyncHandler(
     if (existingSubscriber) {
       existingSubscriber.verificationToken = hashedToken;
       existingSubscriber.verificationTokenExpiresAt =
-      verificationTokenExpiresAt;
+        verificationTokenExpiresAt;
 
       await existingSubscriber.save();
+      await redisClient.del("subscriber:all");
       const verifyUrl = `${process.env.FRONTEND_URL}/verify/subscribe?token=${rawToken}`;
       const html = renderTemplate("verify-email.html", {
         VERIFY_URL: verifyUrl,
@@ -60,7 +62,7 @@ export const createSubscriber = asyncHandler(
       verificationToken: hashedToken,
       verificationTokenExpiresAt,
     });
-
+    await redisClient.del("subscriber:all");
     const verifyUrl = `${process.env.FRONTEND_URL}/verify/subscribe?token=${rawToken}`;
     const html = renderTemplate("verify-email.html", {
       VERIFY_URL: verifyUrl,
@@ -78,11 +80,27 @@ export const createSubscriber = asyncHandler(
   },
 );
 
+
 export const getSubscriber = asyncHandler(
-  async (req: Request, res: Response) => {
+  async (_req: Request, res: Response) => {
+    const cacheKey = "subscriber:all";
+
+    const cachedSubscribers = await redisClient.get(cacheKey);
+    if (cachedSubscribers) {
+      return res.status(200).json({
+        success: true,
+        source: "redis",
+        data: JSON.parse(cachedSubscribers),
+      });
+    }
+
     const subscribers = await BlogSubscriber.find({})
       .select("email isVerified createdAt")
       .lean();
+
+    await redisClient.set(cacheKey, JSON.stringify(subscribers), {
+      EX: 60 * 60 * 6,
+    });
 
     res.status(200).json({
       success: true,
@@ -117,7 +135,7 @@ export const verifySubscriber = asyncHandler(
     subscriber.verificationTokenExpiresAt = undefined;
 
     await subscriber.save();
-
+    await redisClient.del("subscriber:all");
     return res.status(200).json({ success: true, message: "Email verified!" });
   },
 );
