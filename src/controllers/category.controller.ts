@@ -26,6 +26,7 @@ export const createCategory = asyncHandler(
     await redisClient.del("category:all");
     await redisClient.del(`category:${slug}`);
     await redisClient.del(`category:blogs:${slug}`);
+    await redisClient.del("dashboard:stats");
 
     res.status(201).json({
       success: true,
@@ -196,6 +197,7 @@ export const updateCategory = asyncHandler(
     await redisClient.del(`category:${existingCategory.slug}`);
     await redisClient.del(`category:id:${req.params.id}`);
     await redisClient.del(`category:blogs:${existingCategory.slug}`);
+    await redisClient.del("dashboard:stats");
 
     if (updateData.slug && updateData.slug !== existingCategory.slug) {
       await redisClient.del(`category:${updateData.slug}`);
@@ -212,22 +214,28 @@ export const updateCategory = asyncHandler(
 
 export const deleteCategory = asyncHandler(
   async (req: Request, res: Response) => {
-    const category = await Category.findByIdAndDelete(req.params.id);
+    const categoryId = req.params.id;
 
+    const category = await Category.findById(categoryId);
     if (!category) {
       const err: any = new Error("Category not found");
       err.statusCode = 404;
       throw err;
     }
 
-    await redisClient.del("category:all");
-    await redisClient.del(`category:${category.slug}`);
-    await redisClient.del(`category:id:${req.params.id}`);
-    await redisClient.del(`category:blogs:${category.slug}`);
+    await Blog.deleteMany({ category: categoryId });
+
+    await Category.findByIdAndDelete(categoryId);
+
+    const keys = await redisClient.keys(`category*`);
+    if (keys.length > 0) {
+      await redisClient.del(keys);
+    }
+    await redisClient.del("dashboard:stats");
 
     res.status(200).json({
       success: true,
-      message: "Category deleted successfully",
+      message: "Category and its blogs deleted successfully",
     });
   },
 );

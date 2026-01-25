@@ -58,6 +58,8 @@ export const createBlog = asyncHandler(async (req: Request, res: Response) => {
   if (keys.length > 0) {
     await redisClient.del(keys);
   }
+  await redisClient.del("dashboard:stats");
+
   (redisClient.del(`blog:${blog.slug}`),
     res.status(201).json({
       success: true,
@@ -176,7 +178,7 @@ export const getBlogBySlug = asyncHandler(
 
     const blogForCache = { ...blog.toObject(), views: blog.views };
     await redisClient.set(cacheKey, JSON.stringify(blogForCache), {
-      EX: 5 * 60,
+      EX: 5 * 60 * 60 * 24,
     });
 
     res.status(200).json({
@@ -208,6 +210,7 @@ export const updateBlog = asyncHandler(async (req: Request, res: Response) => {
   await Promise.all([
     redisClient.del("blogs:all"),
     redisClient.del(`blog:${blog.slug}`),
+    redisClient.del("dashboard:stats")
   ]);
 
   res.status(200).json({
@@ -243,6 +246,7 @@ export const deleteBlog = asyncHandler(async (req: Request, res: Response) => {
   await Promise.all([
     redisClient.del("blogs:all"),
     redisClient.del(`blog:${blog.slug}`),
+    redisClient.del("dashboard:stats")
   ]);
 
   res.status(200).json({
