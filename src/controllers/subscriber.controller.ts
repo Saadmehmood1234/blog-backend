@@ -99,7 +99,7 @@ export const getSubscriber = asyncHandler(
       .lean();
 
     await redisClient.set(cacheKey, JSON.stringify(subscribers), {
-      EX: 60 * 60 * 6,
+      EX: 60 * 10,
     });
 
     res.status(200).json({

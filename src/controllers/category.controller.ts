@@ -51,7 +51,7 @@ export const getAllCategory = asyncHandler(
     const categories = await Category.find({});
 
     await redisClient.set(cacheKey, JSON.stringify(categories), {
-      EX: 60 * 60 * 24,
+      EX: 10*60,
     });
 
     return res.status(200).json({
@@ -84,7 +84,7 @@ export const getCategoryBySlug = asyncHandler(async (req, res) => {
   }
 
   await redisClient.set(cacheKey, JSON.stringify(category), {
-    EX: 60 * 60 * 3,
+    EX: 60 * 10,
   });
 
   res.json({ success: true, data: category });
@@ -130,8 +130,8 @@ export const getBlogsByCategorySlug = asyncHandler(
     }
 
     await redisClient.set(cacheKey, JSON.stringify(blogs), {
-      EX: 60 * 60 * 24,
-    });
+      EX: 60 * 10,
+    }); 
 
     res.status(200).json({
       success: true,
@@ -164,7 +164,7 @@ export const getCategoryById = asyncHandler(
     }
 
     await redisClient.set(cacheKey, JSON.stringify(category), {
-      EX: 60 * 60 * 24,
+      EX: 60 * 10,
     });
 
     res.status(200).json({

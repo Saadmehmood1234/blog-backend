@@ -129,7 +129,7 @@ export const getAllBlogs = asyncHandler(async (req: Request, res: Response) => {
   //   throw error;
   // }
   await redisClient.set(cacheKey, JSON.stringify(blogs), {
-    EX: 5 * 60 * 60 * 24,
+    EX: 15 * 60,
   });
 
   res.status(200).json({
@@ -178,7 +178,7 @@ export const getBlogBySlug = asyncHandler(
 
     const blogForCache = { ...blog.toObject(), views: blog.views };
     await redisClient.set(cacheKey, JSON.stringify(blogForCache), {
-      EX: 5 * 60 * 60 * 24,
+      EX: 15 * 60,
     });
 
     res.status(200).json({
